@@ -2,7 +2,11 @@
 ''' flask app'''
 
 from flask import Flask, render_template, request, g
-from flask_babel import Babel
+from flask_babel import Babel, get_timezone, format_datetime
+import pytz
+from pytz import timezone
+from pytz.exceptions import UnknownTimeZoneError
+from datetime import datetime
 users = {
     1: {"name": "Balou", "locale": "fr", "timezone": "Europe/Paris"},
     2: {"name": "Beyonce", "locale": "en", "timezone": "US/Central"},
@@ -36,12 +40,34 @@ babel = Babel(app)
 
 @babel.localeselector
 def get_locale():
-    '''get request local'''
+    '''get request locale'''
     lang = request.args.get('locale')
     if lang and lang in app.config['LANGUAGES']:
         return lang
+    elif g.user and g.user.get('locale') in app.config['LANGUAGES']:
+        return g.user.get('locale')
+    elif request.headers.get('locale'):
+        return request.headers.get('locale')
 
     return request.accept_languages.best_match(app.config['LANGUAGES'])
+
+
+@babel.timezoneselector
+def get_timezone():
+    '''get request timezone'''
+    timezone = request.args.get('timezone')
+    if timezone:
+        try:
+            return pytz.timezone(timezone).zone
+        except UnknownTimeZoneError:
+            pass
+    if g.user:
+        try:
+            return pytz.timezone(g.user.get('timezone')).zone
+        except UnknownTimeZoneError:
+            pass
+
+    return app.config['BABEL_DEFAULT_TIMEZONE']
 
 
 @app.before_request
@@ -53,7 +79,8 @@ def before_request():
 @app.route("/", strict_slashes=False)
 def simple_html():
     '''simple flask app'''
-    return render_template("5-index.html")
+    time = format_datetime(format='medium')
+    return render_template("index.html", time=time)
 
 
 if __name__ == "__main__":
