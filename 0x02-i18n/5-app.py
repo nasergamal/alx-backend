@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/usr/bin/env python3
 ''' flask app'''
 
 from flask import Flask, render_template, request, g
@@ -28,17 +28,19 @@ def get_user():
     return None
 
 
+app = Flask(__name__)
+app.config.from_object(Config)
+babel = Babel(app)
+
+
+@babel.localeselector
 def get_locale():
+    '''get request local'''
     lang = request.args.get('locale')
     if lang and lang in app.config['LANGUAGES']:
         return lang
 
     return request.accept_languages.best_match(app.config['LANGUAGES'])
-
-
-app = Flask(__name__)
-app.config.from_object(Config)
-babel = Babel(app, locale_selector=get_locale)
 
 
 @app.before_request
