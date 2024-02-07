@@ -53,9 +53,10 @@ server.get('/process', async(req, res) => {
     
     queue.process('reserve_seat', async(job, done) => {
         const availableSeats = await getCurrentAvailableSeats();
-        if (availableSeats - 1 === 0) {
+        if (availableSeats < 1) {
             reservationEnabled = false;
             done(Error('Not enough seats available'));
+            return;
         }
         reserveSeat(availableSeats - 1);
         done();
